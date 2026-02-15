@@ -147,7 +147,7 @@ def main():
             sys.stdout.write("=" * 38 + "\n\n")
             
             # account for gravity
-            az = az - 9.8
+            az = az - 9.80665
             
             sys.stdout.write("LIS3DH\n")
             if lis:
