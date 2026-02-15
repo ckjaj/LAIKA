@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+"""
+Live terminal display for LIS3DH (accelerometer) + BME280 (barometer).
+Continuously updates one block of text so you can verify sensors are working.
+
+Works with:
+- LIS3DH: adafruit-circuitpython-lis3dh
+- BME280: adafruit-circuitpython-bme280  OR  bme280 (+ smbus2)
+
+Typical wiring:
+- I2C (SDA/SCL) for both sensors (recommended)
+"""
+
+import os
+import sys
+import time
+import math
+import datetime
+from typing import Optional, Tuple
+
+
+REFRESH_S = 0.2  # update rate
+
+
+def clear_screen():
+    # In-place updates are nicer, but if your terminal acts weird, uncomment the clear.
+    # os.system("clear")
+    pass
+
+
+def try_init_i2c():
+    try:
+        import board
+        import busio
+        i2c = busio.I2C(board.SCL, board.SDA)
+        return i2c
+    except Exception as e:
+        return None
+
+
+# ---------- LIS3DH (Adafruit CircuitPython) ----------
+def init_lis3dh(i2c):
+    try:
+        import adafruit_lis3dh
+        # Most LIS3DH breakouts use 0x18; some use 0x19. We'll try both.
+        for addr in (0x18, 0x19):
+            try:
+                sensor = adafruit_lis3dh.LIS3DH_I2C(i2c, address=addr)
+                # Optional: set range (2G, 4G, 8G, 16G)
+                sensor.range = adafruit_lis3dh.RANGE_2_G
+                return sensor, addr
+            except Exception:
+                continue
+        raise RuntimeError("Could not init LIS3DH at 0x18 or 0x19")
+    except ImportError:
+        return None, None
+    except Exception as e:
+        return ("ERR", str(e)), None
+
+
+def read_lis3dh(sensor):
+    # returns (x,y,z) in m/s^2 for adafruit library
+    try:
+        x, y, z = sensor.acceleration
+        return x, y, z, None
+    except Exception as e:
+        return None, None, None, str(e)
+
+
+# ---------- BME280 (Adafruit CircuitPython) ----------
+def init_bme280_adafruit(i2c):
+    try:
+        import adafruit_bme280
+        # Adafruit library defaults to 0x77; some boards are 0x76.
+        for addr in (0x77, 0x76):
+            try:
+                sensor = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=addr)
+                # Optionally set sea level pressure for altitude calc (hPa)
+                sensor.sea_level_pressure = 1013.25
+                return sensor, addr
+            except Exception:
+                continue
+        raise RuntimeError("Could not init Adafruit BME280 at 0x77 or 0x76")
+    except ImportError:
+        return None, None
+    except Exception as e:
+        return ("ERR", str(e)), None
+
+
+def read_bme280_adafruit(sensor):
+    try:
+        temp_c = float(sensor.temperature)
+        pressure_hpa = float(sensor.pressure)
+        humidity = float(sensor.humidity)
+        # altitude is optional, but useful sanity check
+        alt_m = float(sensor.altitude) if hasattr(sensor, "altitude") else None
+        return temp_c, pressure_hpa, humidity, alt_m, None
+    except Exception as e:
+        return None, None, None, None, str(e)
+
+
+# ---------- BME280 (bme280 + smbus2 style) ----------
+def init_bme280_smbus2():
+    """
+    Supports the common 'bme280' + 'smbus2' setup:
+      pip install bme280 smbus2
+    """
+    try:
+        from smbus2 import SMBus
+        import bme280
+
+        bus = SMBus(1)
+
+        # 0x76 or 0x77
+        for addr in (0x76, 0x77):
+            try:
+                calib = bme280.load_calibration_params(bus, addr)
+                return (bus, addr, calib), addr
+            except Exception:
+                continue
+        raise RuntimeError("Could not init bme280/smbus2 at 0x76 or 0x77")
+    except ImportError:
+        return None, None
+    except Exception as e:
+        return ("ERR", str(e)), None
+
+
+def read_bme280_smbus2(state):
+    try:
+        bus, addr, calib = state
+        import bme280
+        data = bme280.sample(bus, addr, calib)
+        # data.temperature (C), data.pressure (hPa), data.humidity (%)
+        return float(data.temperature), float(data.pressure), float(data.humidity), None, None
+    except Exception as e:
+        return None, None, None, None, str(e)
+
+
+def fmt(v, unit="", nd=3):
+    if v is None:
+        return "—"
+    if isinstance(v, (int, float)):
+        return f"{v:.{nd}f}{unit}"
+    return str(v)
+
+
+def main():
+    i2c = try_init_i2c()
+    if i2c is None:
+        print("❌ Could not initialize I2C. Make sure I2C is enabled (raspi-config) and libraries are installed.")
+        sys.exit(1)
+
+    # Init sensors
+    lis3dh, lis_addr = init_lis3dh(i2c)
+    bme_ada, bme_addr_ada = init_bme280_adafruit(i2c)
+    bme_smb, bme_addr_smb = (None, None)
+
+    # If Adafruit BME280 didn't load, try smbus2-style
+    if bme_ada is None:
+        bme_smb, bme_addr_smb = init_bme280_smbus2()
+
+    # Handle init errors
+    lis_init_err = None
+    if isinstance(lis3dh, tuple) and lis3dh and lis3dh[0] == "ERR":
+        lis_init_err = lis3dh[1]
+        lis3dh = None
+
+    bme_init_err = None
+    if isinstance(bme_ada, tuple) and bme_ada and bme_ada[0] == "ERR":
+        bme_init_err = bme_ada[1]
+        bme_ada = None
+    if isinstance(bme_smb, tuple) and bme_smb and bme_smb[0] == "ERR":
+        bme_init_err = bme_smb[1]
+        bme_smb = None
+
+    # Summary
+    print("=== Sensor live view ===")
+    if lis3dh:
+        print(f"✅ LIS3DH ready (I2C addr 0x{lis_addr:02X})")
+    else:
+        print("❌ LIS3DH not initialized.")
+        if lis_init_err:
+            print("   Error:", lis_init_err)
+
+    if bme_ada:
+        print(f"✅ BME280 ready via Adafruit lib (I2C addr 0x{bme_addr_ada:02X})")
+    elif bme_smb and not isinstance(bme_smb, tuple):
+        print(f"✅ BME280 ready via bme280+smbus2 (I2C addr 0x{bme_addr_smb:02X})")
+    else:
+        print("❌ BME280 not initialized.")
+        if bme_init_err:
+            print("   Error:", bme_init_err)
+
+    if not lis3dh and not bme_ada and not bme_smb:
+        print("\nNothing initialized. Common fixes:")
+        print("- Enable I2C: sudo raspi-config -> Interface Options -> I2C -> Enable")
+        print("- Check wiring and sensor addresses (0x18/0x19, 0x76/0x77)")
+        print("- Run: sudo i2cdetect -y 1")
+        sys.exit(2)
+
+    print("\nPress Ctrl+C to stop.\n")
+    time.sleep(0.5)
+
+    try:
+        while True:
+            clear_screen()
+            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Read LIS3DH
+            ax = ay = az = None
+            aerr = None
+            if lis3dh:
+                ax, ay, az, aerr = read_lis3dh(lis3dh)
+
+            # Compute accel magnitude in g (approx)
+            amag_g = None
+            if ax is not None and ay is not None and az is not None:
+                amag = math.sqrt(ax * ax + ay * ay + az * az)  # m/s^2
+                amag_g = amag / 9.80665
+
+            # Read BME280
+            temp_c = pres_hpa = hum = alt_m = None
+            berr = None
+            if bme_ada:
+                temp_c, pres_hpa, hum, alt_m, berr = read_bme280_adafruit(bme_ada)
+            elif bme_smb and not isinstance(bme_smb, tuple):
+                temp_c, pres_hpa, hum, alt_m, berr = read_bme280_smbus2(bme_smb)
+
+            # Terminal in-place block
+            # \033[H moves cursor to top-left; \033[J clears below cursor
+            sys.stdout.write("\033[H\033[J")
+            sys.stdout.write(f"{now}\n")
+            sys.stdout.write("=" * 36 + "\n")
+
+            # account for gravity
+            az = az - 9.8
+
+            sys.stdout.write("LIS3DH (accelerometer)\n")
+            if lis3dh:
+                sys.stdout.write(f"  ax: {fmt(ax, ' m/s^2', 3)}\n")
+                sys.stdout.write(f"  ay: {fmt(ay, ' m/s^2', 3)}\n")
+                sys.stdout.write(f"  az: {fmt(az, ' m/s^2', 3)}\n")
+                sys.stdout.write(f"   |a|: {fmt(amag_g, ' g', 3)}\n")
+                if aerr:
+                    sys.stdout.write(f"  ⚠️ read error: {aerr}\n")
+            else:
+                sys.stdout.write("  — not available\n")
+                if lis_init_err:
+                    sys.stdout.write(f"  init error: {lis_init_err}\n")
+
+            sys.stdout.write("\nBME280 (environment)\n")
+            if bme_ada or (bme_smb and not isinstance(bme_smb, tuple)):
+                sys.stdout.write(f"  temp: {fmt(temp_c, ' °C', 2)}\n")
+                sys.stdout.write(f"  pres: {fmt(pres_hpa, ' hPa', 2)}\n")
+                sys.stdout.write(f"  hum : {fmt(hum, ' %', 1)}\n")
+                if alt_m is not None:
+                    sys.stdout.write(f"  alt : {fmt(alt_m, ' m', 2)}\n")
+                if berr:
+                    sys.stdout.write(f"  ⚠️ read error: {berr}\n")
+            else:
+                sys.stdout.write("  — not available\n")
+                if bme_init_err:
+                    sys.stdout.write(f"  init error: {bme_init_err}\n")
+
+            sys.stdout.write("\nCtrl+C to stop.\n")
+            sys.stdout.flush()
+
+            time.sleep(REFRESH_S)
+
+    except KeyboardInterrupt:
+        print("\nStopped.")
+
+
+if __name__ == "__main__":
+    main()
