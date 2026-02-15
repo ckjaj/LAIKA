@@ -3,8 +3,8 @@ Procedure for testing phase:
 streaming data isn't important at the testing stage of the project ->
   save it all to a csv file to examine after the test
 
-code procedure ->
-  1, use board and busio libraries to initialize I2C
+code procedure 
+1, use board and busio libraries to initialize I2C
 
   2, use adafruit -> bme_280, lis3dh libraries to initialize sensors
     sensors at I2C addresses 0x77, 0x18 on rasberry pi, respectively
@@ -22,7 +22,7 @@ code procedure ->
 
   7, close the csv file to save changes
 
-tests to ensure the reliability of data ->
+tests to ensure the reliability of data 
   1, make sure barometric readings are stable and correct
 
   2, make sure pressure spike at beginning of stage 3 won't fry avionics
