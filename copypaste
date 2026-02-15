@@ -1,10 +1,12 @@
-python3 -c "import adafruit_bme280, sys; print(adafruit_bme280.__file__)"
-
-pip uninstall -y RPi.bme280 adafruit_bme280 adafruit-circuitpython-bme280
+ls -la /home/pi/bme_env/lib/python3.13/site-packages/adafruit_bme280
 
 rm -rf /home/pi/bme_env/lib/python3.13/site-packages/adafruit_bme280
 
-pip install --upgrade --force-reinstall adafruit-circuitpython-bme280
+rm -rf /home/pi/bme_env/lib/python3.13/site-packages/__pycache__/adafruit_bme280*
+rm -rf /home/pi/bme_env/lib/python3.13/site-packages/adafruit_bme280*.dist-info
+rm -rf /home/pi/bme_env/lib/python3.13/site-packages/adafruit_bme280*.egg-info
+
+pip install --upgrade --force-reinstall --no-cache-dir adafruit-circuitpython-bme280
 
 python3 - << 'EOF'
 import adafruit_bme280, os
