@@ -232,6 +232,9 @@ def main():
             sys.stdout.write(f"{now}\n")
             sys.stdout.write("=" * 36 + "\n")
 
+            # account for gravity
+            az = az - 9.8
+
             sys.stdout.write("LIS3DH (accelerometer)\n")
             if lis3dh:
                 sys.stdout.write(f"  ax: {fmt(ax, ' m/s^2', 3)}\n")
