@@ -1,0 +1,14 @@
+python3 -c "import adafruit_bme280, sys; print(adafruit_bme280.__file__)"
+
+pip uninstall -y RPi.bme280 adafruit_bme280 adafruit-circuitpython-bme280
+
+rm -rf /home/pi/bme_env/lib/python3.13/site-packages/adafruit_bme280
+
+pip install --upgrade --force-reinstall adafruit-circuitpython-bme280
+
+python3 - << 'EOF'
+import adafruit_bme280, os
+print("Loaded from:", adafruit_bme280.__file__)
+print("Is .py file:", adafruit_bme280.__file__.endswith("adafruit_bme280.py"))
+print("Has I2C class:", hasattr(adafruit_bme280, "Adafruit_BME280_I2C"))
+EOF
