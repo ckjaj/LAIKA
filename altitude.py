@@ -33,7 +33,7 @@ def make_csv_path():
     if CSV_NAME:
         return CSV_NAME
     ts = dt.datetime.now().strftime("%m/%d/%Y_%H;%M")
-    return f"test_at_{ts}.csv"
+    return f"csv/test_at_{ts}.csv"
 
 
 def init_i2c():
