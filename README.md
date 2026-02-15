@@ -18,9 +18,7 @@ streaming data isn't important at the testing stage of the project ->
 
 0, tests to ensure the reliability of data 
 1, make sure barometric readings are stable and correct
-
-  2, make sure pressure spike at beginning of stage 3 won't fry avionics
-
-  3, ...
+2, make sure pressure spike at beginning of stage 3 won't fry avionics
+3, ...
 
   
