@@ -42,10 +42,17 @@ def init_i2c():
     return busio.I2C(board.SCL, board.SDA)
 
 
-def init_bme280(i2c):
+def init_bme280(i2c, address=0x77):
+    # Newer Adafruit layout (recommended in docs)
+    try:
+        from adafruit_bme280 import basic
+        return basic.Adafruit_BME280_I2C(i2c, address=address)
+    except Exception:
+        pass
+
+    # Older layout fallback (some installs)
     import adafruit_bme280
-    # force address 0x77
-    return adafruit_bme280.Adafruit_BME280_I2C(i2c, address=BME280_ADDR)
+    return adafruit_bme280.Adafruit_BME280_I2C(i2c, address=address)
 
 
 def init_lis3dh(i2c):
