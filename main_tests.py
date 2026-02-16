@@ -18,7 +18,7 @@ LIS_ADDRESS = 0x18
 SEA_LEVEL_PRESSURE = 1013.25
 
 LOG_DIR = "./DATA/" #note: needs to be ./(name)/ for formatting
-CSV_NAME = dt.now().strftime("%d-%m-%Y")
+CSV_NAME = dt.datetime.now().strftime("%d-%m-%Y")
 
 BUFFER = .25
 
@@ -28,31 +28,32 @@ def get_csv_path():
 	import pathlib as path
 
 	#creates ./DATA if it doesn't exist
-	data_Path = path(LOG_DIR)
+	data_Path = path.Path(LOG_DIR)
 	data_Path.mkdir(exists_ok=True)
 	
 	
 
 	#return a unique filename in form ./DATA/[date]_(log *).csv 
 		#note: cannot be bigger than a 64 bit int
+	x=1
 	while(x < sys.maxsize):
-		filestr = LOG_DIR+CSV_NAME+"_(log "+x+").csv"
-		file_path = path(filestr)
-		if(!file_path.exists()): 
+		filestr = f"{LOG_DIR}{CSV_NAME}_(log {x}).csv"
+		file_path = path.Path(filestr)
+		if not file_path.exists(): 
 			return filestr
-		x++
+		x += 1
 	
 def init_i2c():
 	import board
 	return board.I2C()
 
-def init_bme280(i2c):
+def init_bme(i2c):
 	from adafruit_bme280 import basic as adafruit_bme280
 	bme = adafruit_bme280.Adafruit_BME280_I2C(i2c, BME_ADDRESS)	
 	bme.sea_level_pressure = SEA_LEVEL_PRESSURE #calibrate
 	return bme
 
-def init_lis3dh(i2c):
+def init_lis(i2c):
 	import adafruit_lis3dh
 	return adafruit_lis3dh.LIS3DH_I2C(i2c, LIS_ADDRESS)
 
@@ -63,7 +64,7 @@ def main():
 	try:
 		i2c = init_i2c()
 	except Exception as e:
-		print("i2c failed to initialize: "+e)
+		print(f"i2c failed to initialize: {e}")
 		sys.exit(1)	
 
 	#init sensors
@@ -71,13 +72,13 @@ def main():
 		bme280 = init_bme(i2c)
 
 	except Exception as e:
-		print("bme280 failed to initialize: "+e)
+		print(f"bme280 failed to initialize: {e}")
 		sys.exit(2)
 
 	try:
 		lis3dh = init_lis(i2c)
-	except Exception:
-		print("lis3dh failed to initialize: "+e)
+	except Exception as e:
+		print(f"lis3dh failed to initialize: {e}")
 		sys.exit(2)
 
 	#get initial altitude and pressure readings (for relative pressure and altitude measurements)
@@ -91,7 +92,7 @@ def main():
 
 
 	#initialize csv file
-	data = open(get_csv_path, 'w', newline="")
+	data = open(get_csv_path(), 'w', newline="")
 	fields = [
 		"time",
 		"rel_time",
@@ -114,16 +115,16 @@ def main():
 			#get data
 			pressure = bme280.pressure
 			temperature = bme280.temperature
-			rel_altitude = bme280 - baseAlt
 			abs_altitude = bme280.altitude
+			rel_altitude = abs_altitude - baseAlt
 			acc_x, acc_y, acc_z = lis3dh.acceleration
 
-			time = dt.datetime.now()
+			time_now = dt.datetime.now()
 
-			rel_time = time - basetime
+			rel_time = time_now - baseTime
 
-			write.writerow({
-				"time": time.strftime("%H-%M-%S"),
+			writer.writerow({
+				"time": time_now.strftime("%H-%M-%S"),
 				"rel_time": rel_time.total_seconds(),
 				"pressure": pressure,
 				"temperature": temperature,
@@ -141,7 +142,8 @@ def main():
 			data.close()
 			sys.exit(0)
 
-
+if __name__ == "__main__":
+	main()
 
 
 
