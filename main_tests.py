@@ -1,9 +1,15 @@
 import sys
 import datetime as dt
 import csv
+import time
 
-#system exit (1, i2c failure
-#			  2, sensor failure)
+import math
+
+#system exit (0, keyboard interruption
+#		  	  1, i2c failure
+#			  2, sensor failure
+#
+
 
 #---------#
 BME_ADDRESS = 0x77
@@ -11,10 +17,10 @@ LIS_ADDRESS = 0x18
 
 SEA_LEVEL_PRESSURE = 1013.25
 
+LOG_DIR = "./DATA/" #note: needs to be ./(name)/ for formatting
+CSV_NAME = dt.now().strftime("%d-%m-%Y")
 
-date = dt.now()
-CSV_NAME = DATE.strftime("%d-%m-%Y")
-
+BUFFER = .25
 
 #---------#
 
@@ -22,22 +28,20 @@ def get_csv_path():
 	import pathlib as path
 
 	#creates ./DATA if it doesn't exist
-	data_Path = path('./DATA')
+	data_Path = path(LOG_DIR)
 	data_Path.mkdir(exists_ok=True)
-
-	#return a unique filename in form ./DATA/[date]_(log *).csv
 	
-	x = 1
-	while(True):
-		filestr = "./DATA/"+name+"_(log "+x+").csv"
+	
+
+	#return a unique filename in form ./DATA/[date]_(log *).csv 
+		#note: cannot be bigger than a 64 bit int
+	while(x < sys.maxsize):
+		filestr = LOG_DIR+CSV_NAME+"_(log "+x+").csv"
 		file_path = path(filestr)
-		if(!file_path.exists()):
+		if(!file_path.exists()): 
 			return filestr
-
+		x++
 	
-
-
-
 def init_i2c():
 	import board
 	return board.I2C()
@@ -83,11 +87,14 @@ def main():
 	basePre = bme280.pressure
 		#note: could make this more accurate by getting a mean of various values, integrate later???
 
+	baseTime = dt.datetime.now()
 
 
 	#initialize csv file
-	data = open(CSV_PATH, 'w', newline="")
+	data = open(get_csv_path, 'w', newline="")
 	fields = [
+		"time",
+		"rel_time",
 		"pressure",
 		"temperature",
 		"rel_altitude",
@@ -103,18 +110,36 @@ def main():
 
 	#while loop to log data into csv
 	while(True):
+		try:
+			#get data
+			pressure = bme280.pressure
+			temperature = bme280.temperature
+			rel_altitude = bme280 - baseAlt
+			abs_altitude = bme280.altitude
+			acc_x, acc_y, acc_z = lis3dh.acceleration
 
-		#get data
+			time = dt.datetime.now()
 
-		pressure = bme280
-		temperature = bme280
-		rel_altitude = bme280 -
-		abs_altitude = bme280
-		acc_x
-		acc_y
-		acc_z
+			rel_time = time - basetime
+
+			write.writerow({
+				"time": time.strftime("%H-%M-%S"),
+				"rel_time": rel_time.total_seconds(),
+				"pressure": pressure,
+				"temperature": temperature,
+				"rel_altitude": rel_altitude,
+				"abs_altitude": abs_altitude,
+				"acc_x": acc_x,
+				"acc_y": acc_y,
+				"acc_z": acc_z
+				})
+
+			time.sleep(BUFFER)
+			#in g's
 		
-		lis3dh
+		except KeyboardInterrupt:
+			data.close()
+			sys.exit(0)
 
 
 
