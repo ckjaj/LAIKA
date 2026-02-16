@@ -2,6 +2,7 @@ import sys
 import datetime as dt
 import csv
 import time
+import os
 
 import math
 
@@ -92,7 +93,9 @@ def main():
 
 
 	#initialize csv file
-	data = open(get_csv_path(), 'w', newline="")
+	csv_path = get_csv_path()
+
+	data = open(csv_path, 'w', newline="")
 	fields = [
 		"time",
 		"rel_time",
@@ -139,8 +142,12 @@ def main():
 			#in g's
 		
 		except KeyboardInterrupt:
-			data.close()
-			sys.exit(0)
+			print(f"\nStopped. CSV saved at:{csv_path}")
+		finally:
+			try:
+				data.close()
+			except Exception:
+				pass
 
 if __name__ == "__main__":
 	main()
