@@ -21,7 +21,7 @@ SEA_LEVEL_PRESSURE = 1013.25
 LOG_DIR = "./DATA/" #note: needs to be ./(name)/ for formatting
 CSV_NAME = dt.datetime.now().strftime("%d-%m-%Y")
 
-BUFFER = .25
+BUFFER = .01
 
 #---------#
 
@@ -128,7 +128,7 @@ def main():
 				rel_time = time_now - baseTime
 
 				writer.writerow({
-					"time": time_now.strftime("%H-%M-%S"),
+					"time": time_now.strftime("%H:%M:%S"),
 					"rel_time": rel_time.total_seconds(),
 					"pressure": pressure,
 					"temperature": temperature,
