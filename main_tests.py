@@ -14,7 +14,7 @@ import math
 
 #---------#
 BME_ADDRESS = 0x77
-LIS_ADDRESS = 0x18
+LIS_ADDRESS = 0x19
 
 SEA_LEVEL_PRESSURE = 1013.25
 
