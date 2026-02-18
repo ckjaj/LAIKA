@@ -30,7 +30,7 @@ def get_csv_path():
 
 	#creates ./DATA if it doesn't exist
 	data_Path = path.Path(LOG_DIR)
-	data_Path.mkdir(exists_ok=True)
+	data_Path.mkdir(exist_ok=True)
 	
 	
 
