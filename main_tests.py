@@ -113,41 +113,42 @@ def main():
 
 
 	#while loop to log data into csv
-	while(True):
-		try:
-			#get data
-			pressure = bme280.pressure
-			temperature = bme280.temperature
-			abs_altitude = bme280.altitude
-			rel_altitude = abs_altitude - baseAlt
-			acc_x, acc_y, acc_z = lis3dh.acceleration
-
-			time_now = dt.datetime.now()
-
-			rel_time = time_now - baseTime
-
-			writer.writerow({
-				"time": time_now.strftime("%H-%M-%S"),
-				"rel_time": rel_time.total_seconds(),
-				"pressure": pressure,
-				"temperature": temperature,
-				"rel_altitude": rel_altitude,
-				"abs_altitude": abs_altitude,
-				"acc_x": acc_x,
-				"acc_y": acc_y,
-				"acc_z": acc_z
-				})
-
-			time.sleep(BUFFER)
-			#in g's
-		
-		except KeyboardInterrupt:
-			print(f"\nStopped. CSV saved at:{csv_path}")
-		finally:
+	try:
+		while(True):
 			try:
-				data.close()
-			except Exception:
-				pass
+				#get data
+				pressure = bme280.pressure
+				temperature = bme280.temperature
+				abs_altitude = bme280.altitude
+				rel_altitude = abs_altitude - baseAlt
+				acc_x, acc_y, acc_z = lis3dh.acceleration
+
+				time_now = dt.datetime.now()
+
+				rel_time = time_now - baseTime
+
+				writer.writerow({
+					"time": time_now.strftime("%H-%M-%S"),
+					"rel_time": rel_time.total_seconds(),
+					"pressure": pressure,
+					"temperature": temperature,
+					"rel_altitude": rel_altitude,
+					"abs_altitude": abs_altitude,
+					"acc_x": acc_x,
+					"acc_y": acc_y,
+					"acc_z": acc_z
+					})
+
+				time.sleep(BUFFER)
+				#in g's
+			
+			except KeyboardInterrupt:
+				print(f"\nStopped. CSV saved at:{csv_path}")
+	finally:
+		try:
+			data.close()
+		except Exception:
+			pass
 
 if __name__ == "__main__":
 	main()
