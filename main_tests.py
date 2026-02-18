@@ -56,7 +56,7 @@ def init_bme(i2c):
 
 def init_lis(i2c):
 	import adafruit_lis3dh
-	return adafruit_lis3dh.LIS3DH_I2C(i2c, LIS_ADDRESS)
+	return adafruit_lis3dh.LIS3DH_I2C(i2c, address=LIS_ADDRESS)
 
 
 
