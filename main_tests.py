@@ -139,7 +139,7 @@ def main():
 					"acc_z": acc_z
 					})
 
-				#time.sleep(BUFFER)
+				time.sleep(BUFFER)
 				#in g's
 			
 			except KeyboardInterrupt:
