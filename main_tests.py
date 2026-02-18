@@ -21,7 +21,7 @@ SEA_LEVEL_PRESSURE = 1013.25
 LOG_DIR = "./DATA/" #note: needs to be ./(name)/ for formatting
 CSV_NAME = dt.datetime.now().strftime("%d-%m-%Y")
 
-BUFFER = .01
+BUFFER = .1
 
 #---------#
 
@@ -139,7 +139,7 @@ def main():
 					"acc_z": acc_z
 					})
 
-				time.sleep(BUFFER)
+				#time.sleep(BUFFER)
 				#in g's
 			
 			except KeyboardInterrupt:
