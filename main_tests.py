@@ -144,7 +144,6 @@ def main():
 			
 			except KeyboardInterrupt:
 				print(f"\nStopped. CSV saved at:{csv_path}")
-			finally:
 				break
 	finally:
 		try:
