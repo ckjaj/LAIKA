@@ -112,19 +112,18 @@ def main():
 
 
 
-	#while loop to log data into csv
 	try:
-		while(True):
+		while True:
 			try:
-				#get data
+				loop_start = time.time()
+
+				# Get data
 				pressure = bme280.pressure
 				temperature = bme280.temperature
 				abs_altitude = bme280.altitude
 				rel_altitude = abs_altitude - baseAlt
 				acc_x, acc_y, acc_z = lis3dh.acceleration
-
 				time_now = dt.datetime.now()
-
 				rel_time = time_now - baseTime
 
 				writer.writerow({
@@ -137,13 +136,16 @@ def main():
 					"acc_x": acc_x,
 					"acc_y": acc_y,
 					"acc_z": acc_z
-					})
+				})
 
-				time.sleep(BUFFER)
-				#in g's
-			
+				# Sleep only the remaining time in the interval
+				elapsed = time.time() - loop_start
+				remaining = BUFFER - elapsed
+				if remaining > 0:
+					time.sleep(remaining)
+
 			except KeyboardInterrupt:
-				print(f"\nStopped. CSV saved at:{csv_path}")
+				print(f"\nStopped. CSV saved at: {csv_path}")
 				break
 	finally:
 		try:
