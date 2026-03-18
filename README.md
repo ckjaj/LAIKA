@@ -66,7 +66,7 @@ install.packages(c("ggplot2"))
 ### Logging (on the Raspberry Pi)
 
 ```bash
-python logger.py
+python main_tests.py
 ```
 
 - Creates a new CSV in `DATA/` named `DD-MM-YYYY_(log N).csv` — the log number increments automatically so previous runs are never overwritten
