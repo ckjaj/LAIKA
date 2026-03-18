@@ -56,7 +56,7 @@ i2cdetect -y 1
 Requires R and the following packages. Run once in an R session:
 
 ```r
-install.packages(c("ggplot2", "dplyr", "readr"))
+install.packages(c("ggplot2"))
 ```
 
 ---
